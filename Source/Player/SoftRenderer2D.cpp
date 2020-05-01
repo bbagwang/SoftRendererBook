@@ -33,26 +33,41 @@ void SoftRenderer::DrawGrid2D()
 	_RSI->DrawFullHorizontalLine(screenHalfSize.Y, LinearColor::Red);
 	_RSI->DrawFullVerticalLine(screenHalfSize.X, LinearColor::Green);
 }
-
-
-// 게임 로직
 void SoftRenderer::Update2D(float InDeltaSeconds)
 {
-	// 점의 위치와 색상 지정하기
-	_CurrentPosition = Vector2(10.f, 10.f);
-	_CurrentColor = LinearColor::Blue;
+	float twoPiUnit = GetElapsedTime() * Math::TwoPI;
+	float sinWave = sinf(twoPiUnit);
+
+	_CurrentColor.R = sinWave;
+	_CurrentColor.G = sinWave;
+	_CurrentColor.B = 1- sinWave;
+
+	_Transform.SetRotation(sinWave);
 }
 
-// 렌더링 로직
 void SoftRenderer::Render2D()
 {
-	// 격자 그리기
 	DrawGrid2D();
 
-	// 지정된 위치에 지정한 색상으로 점 찍기
-	_RSI->DrawPoint(_CurrentPosition, _CurrentColor);
+	for (int i = -(int)GetScreenSize().X/2; i < (int)GetScreenSize().X/2; i++)
+	{
+		_Transform.SetPosition(Vector2(i,25));
+		_Transform.SetRotation(i*10);
+		Vector2 newPosition = _Transform.GetModelingMatrix()*Vector2::One;
 
-	// 현재 위치를 화면에 출력
-	_RSI->PushStatisticText(_CurrentPosition.ToString());
+		_RSI->DrawPoint(newPosition, _CurrentColor);
+		_RSI->DrawPoint(newPosition + Vector2::UnitX, _CurrentColor);
+		_RSI->DrawPoint(newPosition - Vector2::UnitX, _CurrentColor);
+		_RSI->DrawPoint(newPosition + Vector2::UnitY, _CurrentColor);
+		_RSI->DrawPoint(newPosition - Vector2::UnitY, _CurrentColor);
+
+		for (int j = newPosition.Y; j >= -(int)GetScreenSize().Y / 2; j--)
+		{
+			_RSI->DrawPoint(Vector2(newPosition.X,(float)j), LinearColor::Blue);
+			_RSI->DrawPoint(Vector2(newPosition.X,(float)j) + Vector2::UnitX, LinearColor::Blue);
+			_RSI->DrawPoint(Vector2(newPosition.X,(float)j) - Vector2::UnitX, LinearColor::Blue);
+			_RSI->DrawPoint(Vector2(newPosition.X,(float)j) + Vector2::UnitY, LinearColor::Blue);
+			_RSI->DrawPoint(Vector2(newPosition.X,(float)j) - Vector2::UnitY, LinearColor::Blue);
+		}
+	}
 }
-

@@ -53,8 +53,8 @@ private:
 
 	int _Grid2DUnit = 10;
 	Vector2 _CurrentPosition = Vector2::Zero;
-	LinearColor _CurrentColor = LinearColor::Blue;
-
+	LinearColor _CurrentColor = LinearColor::Black;
+	Transform _Transform;
 private:
 	// 초기화 점검 변수
 	bool _PerformanceCheckInitialized = false;
