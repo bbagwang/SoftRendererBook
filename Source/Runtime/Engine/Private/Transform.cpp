@@ -21,11 +21,6 @@ Matrix3x3 Transform::GetModelingMatrix() const
 	S_Matrix[1] *= Scale.Y;
 
 	return T_Matrix * R_Matrix * S_Matrix;
-
-	/*return Matrix3x3
-		(cosf(Rotation)*Scale.X, -sinf(Rotation)*Scale.Y, Position.X,
-		 sinf(Rotation)*Scale.X, cosf(Rotation)*Scale.Y, Position.Y,
-		 0, 0, 1);*/
 }
 
 void Transform::CalculateLocalAxis()
