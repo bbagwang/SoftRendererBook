@@ -33,41 +33,66 @@ void SoftRenderer::DrawGrid2D()
 	_RSI->DrawFullHorizontalLine(screenHalfSize.Y, LinearColor::Red);
 	_RSI->DrawFullVerticalLine(screenHalfSize.X, LinearColor::Green);
 }
+
+
+// 게임 로직
 void SoftRenderer::Update2D(float InDeltaSeconds)
 {
-	float twoPiUnit = GetElapsedTime() * Math::TwoPI;
-	float sinWave = sinf(twoPiUnit);
+	InputManager input = _GameEngine.GetInputManager();
+	Vector2 deltaPosition = Vector2(input.GetXAxis(), input.GetYAxis()) * _MoveSpeed * InDeltaSeconds;
+	_PivotPosition += deltaPosition;
 
-	_CurrentColor.R = sinWave;
-	_CurrentColor.G = sinWave;
-	_CurrentColor.B = 1- sinWave;
-
-	_Transform.SetRotation(sinWave);
+	_CurrentColor = input.SpacePressed() ? LinearColor::Red : LinearColor::Blue;
 }
 
+// 렌더링 로직
 void SoftRenderer::Render2D()
 {
+	// 격자 그리기
 	DrawGrid2D();
 
-	for (int i = -(int)GetScreenSize().X/2; i < (int)GetScreenSize().X/2; i++)
+	////////////////////// 모델링 공간 //////////////////////
+	static float squareHalfSize = 0.5f;
+	static const int vertexCount = 4;
+	static const int triangleCount = 2;
+
+	// 정점 배열과 인덱스 배열 생성
+	Vector2 vertices[vertexCount] = {
+		Vector2(-squareHalfSize, -squareHalfSize),
+		Vector2(-squareHalfSize, squareHalfSize),
+		Vector2(squareHalfSize, squareHalfSize),
+		Vector2(squareHalfSize, -squareHalfSize)
+	};
+
+	int indices[triangleCount * 3] = {
+		0, 1, 2,
+		0, 2, 3
+	};
+
+	////////////////////// 월드 공간 //////////////////////
+	// 게임 로직에서 변경한 피벗 위치의 출력
+	_RSI->PushStatisticText(_PivotPosition.ToString());
+
+	// 변환 행렬의 설계
+	static float squareScale = 100.f;
+	Matrix3x3 scaleMat = Matrix3x3(Vector3::UnitX * squareScale, Vector3::UnitY * squareScale, Vector3::UnitZ);
+	Matrix3x3 translateMat = Matrix3x3(Vector3::UnitX, Vector3::UnitY, Vector3(_PivotPosition.X, _PivotPosition.Y, 1.f));
+	Matrix3x3 finalMat = translateMat * scaleMat;
+
+	// 정점에 행렬을 적용
+	for (int vi = 0; vi < vertexCount; ++vi)
 	{
-		_Transform.SetPosition(Vector2(i,25));
-		_Transform.SetRotation(i*10);
-		Vector2 newPosition = _Transform.GetModelingMatrix()*Vector2::One;
-
-		_RSI->DrawPoint(newPosition, _CurrentColor);
-		_RSI->DrawPoint(newPosition + Vector2::UnitX, _CurrentColor);
-		_RSI->DrawPoint(newPosition - Vector2::UnitX, _CurrentColor);
-		_RSI->DrawPoint(newPosition + Vector2::UnitY, _CurrentColor);
-		_RSI->DrawPoint(newPosition - Vector2::UnitY, _CurrentColor);
-
-		for (int j = newPosition.Y; j >= -(int)GetScreenSize().Y / 2; j--)
-		{
-			_RSI->DrawPoint(Vector2(newPosition.X,(float)j), LinearColor::Blue);
-			_RSI->DrawPoint(Vector2(newPosition.X,(float)j) + Vector2::UnitX, LinearColor::Blue);
-			_RSI->DrawPoint(Vector2(newPosition.X,(float)j) - Vector2::UnitX, LinearColor::Blue);
-			_RSI->DrawPoint(Vector2(newPosition.X,(float)j) + Vector2::UnitY, LinearColor::Blue);
-			_RSI->DrawPoint(Vector2(newPosition.X,(float)j) - Vector2::UnitY, LinearColor::Blue);
-		}
+		vertices[vi] = finalMat * vertices[vi];
 	}
+
+	// 변환된 정점을 잇는 선 그리기
+	for (int ti = 0; ti < triangleCount; ++ti)
+	{
+		int bi = ti * 3;
+		_RSI->DrawLine(vertices[indices[bi]], vertices[indices[bi + 1]], _CurrentColor);
+		_RSI->DrawLine(vertices[indices[bi]], vertices[indices[bi + 2]], _CurrentColor);
+		_RSI->DrawLine(vertices[indices[bi + 1]], vertices[indices[bi + 2]], _CurrentColor);
+	}
+
 }
+
