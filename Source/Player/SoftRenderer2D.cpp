@@ -41,25 +41,18 @@ void SoftRenderer::DrawGrid2D()
 // 게임 로직
 void SoftRenderer::Update2D(float InDeltaSeconds)
 {
-	static float moveSpeed = 1000.f;
+	static float moveSpeed = 100.f;
 
 	InputManager input = _GameEngine.GetInputManager();
 
-	Transform2D& PlayerTransform = _GameEngine.GetPlayer()->GetTransform();
-	PlayerTransform.AddPosition(Vector2(input.GetXAxis(), input.GetYAxis()) * moveSpeed * InDeltaSeconds);
+	// 플레이어 게임 오브젝트의 트랜스폼
+	Transform2D& playerTransform = _GameEngine.GetPlayer()->GetTransform();
+	playerTransform.AddPosition(Vector2(input.GetXAxis(), input.GetYAxis()) * moveSpeed * InDeltaSeconds);
 
-	_CurrentColor = input.SpacePressed() ? LinearColor::Red : LinearColor::Blue;
-
-	Transform2D& CameraTransform = _GameEngine.GetCamera()->GetTransform();
-	Vector2 PlayerPosition = PlayerTransform.GetPosition();
-	Vector2 PrevCameraPosition = CameraTransform.GetPosition();
-	if ((PlayerPosition - PrevCameraPosition).SizeSquared() < 0.1f)
-		CameraTransform.SetPosition(PlayerPosition);
-	else
-	{
-		Vector2 newCameraPosition = PrevCameraPosition + (PlayerPosition - PrevCameraPosition) * InDeltaSeconds*10.f;
-		CameraTransform.SetPosition(newCameraPosition);
-	}
+	// 플레이어를 따라다니는 카메라의 트랜스폼
+	static float thresholdDistance = 1.f;
+	Transform2D& cameraTransform = _GameEngine.GetCamera()->GetTransform();
+	cameraTransform.SetPosition(playerTransform.GetPosition());
 }
 
 // 렌더링 로직
@@ -68,29 +61,64 @@ void SoftRenderer::Render2D()
 	// 격자 그리기
 	DrawGrid2D();
 
+	// 통계 수치
+	size_t totalObjectCount = _GameEngine.GetGameObjects().size();
+	size_t culledObjectByCircleCount = 0;
+	size_t culledObjectByRectangleCount = 0;
+	size_t renderingObjectCount = 0;
+
 	// 카메라의 뷰 행렬
 	Matrix3x3 viewMat = _GameEngine.GetCamera()->GetViewMatrix();
 
-	for (auto& Iter : _GameEngine.GetSceneObjects())
+	// 카메라의 가시 영역
+	const Circle& cameraCircleBound = _GameEngine.GetCamera()->GetCircleBound();
+	const Rectangle& cameraRectangleBound = _GameEngine.GetCamera()->GetRectangleBounds();
+
+	_RSI->PushStatisticText("Total Count : " + std::to_string(totalObjectCount));
+
+	// 랜덤하게 생성된 모든 게임 오브젝트들
+	for (auto it = _GameEngine.GoBegin(); it != _GameEngine.GoEnd(); ++it)
 	{
-		// 플레이어 게임 오브젝트의 트랜스폼
-		Transform2D& transform = Iter->GetTransform();
+		GameObject2D* gameObject = it->get();
+		const Mesh2D* mesh = _GameEngine.GetMesh(gameObject->GetMeshKey());
+		Transform2D& transform = gameObject->GetTransform();
 		Matrix3x3 finalMat = viewMat * transform.GetModelingMatrix();
 
-		// 게임 오브젝트 트랜스폼 정보의 출력
-		_RSI->PushStatisticTexts(finalMat.ToStrings());
+		// 게임 오브젝트의 충돌 영역
+		Circle gameObjectCircleBound(mesh->GetCircleBound());
+		Rectangle gameObjectRectangleBound(mesh->GetRectangleBound());
 
-		// 플레이어 게임 오브젝트의 메시
-		Mesh* mesh = _GameEngine.FindResourceByName("Mesh");
-		size_t vertexCount = mesh->GetVetrices().size();
-		size_t indexCount = mesh->GetIndices().size();
+		// 충돌 영역을 뷰 좌표계로 변환
+		gameObjectCircleBound.Center = finalMat * gameObjectCircleBound.Center;
+		gameObjectCircleBound.Radius = gameObjectCircleBound.Radius * transform.GetScale().Max();
+
+		gameObjectRectangleBound.Min = finalMat * gameObjectRectangleBound.Min;
+		gameObjectRectangleBound.Max = finalMat * gameObjectRectangleBound.Max;
+
+		// 카메라 바운딩 영역과 충돌 체크
+		if (!cameraCircleBound.Intersect(gameObjectCircleBound))
+		{
+			culledObjectByCircleCount++;
+			continue;
+		}
+
+		if (!cameraRectangleBound.Intersect(gameObjectRectangleBound))
+		{
+			culledObjectByRectangleCount++;
+			continue;
+		}
+
+		renderingObjectCount++;
+
+		size_t vertexCount = mesh->_Vertices.size();
+		size_t indexCount = mesh->_Indices.size();
 		size_t triangleCount = indexCount / 3;
 
 		// 렌더러가 사용할 정점 버퍼와 인덱스 버퍼 생성
 		Vector2* vertices = new Vector2[vertexCount];
-		std::memcpy(vertices, &mesh->GetVetrices()[0], sizeof(Vector2) * vertexCount);
+		std::memcpy(vertices, mesh->_Vertices.data(), sizeof(Vector2) * vertexCount);
 		int* indices = new int[indexCount];
-		std::memcpy(indices, &mesh->GetIndices()[0], sizeof(int) * indexCount);
+		std::memcpy(indices, mesh->_Indices.data(), sizeof(int) * indexCount);
 
 		// 각 정점에 행렬을 적용
 		for (int vi = 0; vi < vertexCount; ++vi)
@@ -102,13 +130,17 @@ void SoftRenderer::Render2D()
 		for (int ti = 0; ti < triangleCount; ++ti)
 		{
 			int bi = ti * 3;
-			_RSI->DrawLine(vertices[indices[bi]], vertices[indices[bi + 1]], _CurrentColor);
-			_RSI->DrawLine(vertices[indices[bi]], vertices[indices[bi + 2]], _CurrentColor);
-			_RSI->DrawLine(vertices[indices[bi + 1]], vertices[indices[bi + 2]], _CurrentColor);
+			_RSI->DrawLine(vertices[indices[bi]], vertices[indices[bi + 1]], gameObject->GetColor());
+			_RSI->DrawLine(vertices[indices[bi]], vertices[indices[bi + 2]], gameObject->GetColor());
+			_RSI->DrawLine(vertices[indices[bi + 1]], vertices[indices[bi + 2]], gameObject->GetColor());
 		}
 
 		delete[] vertices;
 		delete[] indices;
 	}
+
+	_RSI->PushStatisticText("Culled by Circle Count : " + std::to_string(culledObjectByCircleCount));
+	_RSI->PushStatisticText("Culled by Rectangle Count : " + std::to_string(culledObjectByRectangleCount));
+	_RSI->PushStatisticText("Rendered Count : " + std::to_string(renderingObjectCount));
 }
 

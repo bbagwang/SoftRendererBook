@@ -1,5 +1,4 @@
 #pragma once
-#include <unordered_map>
 
 class GameEngine
 {
@@ -7,33 +6,25 @@ public:
 	GameEngine() = default;
 
 public:
-	bool Init();
+	bool Init(const ScreenPoint& InScreenSize);
 	bool LoadResources();
-	bool LoadScene();
+	bool LoadScene(const ScreenPoint& InScreenSize);
 	InputManager& GetInputManager() { return _InputManager; }
-	Camera2D* GetCamera() { return (static_cast<Camera2D*>(FindObjectByName("Camera"))); }
-	GameObject2D* GetPlayer() { return (FindObjectByName("Player")); }
+	std::vector<std::unique_ptr<GameObject2D>>& GetGameObjects() { return _GameObjects; }
+	const Mesh2D* GetMesh(const std::string& InMeshKey) { return _Meshes[InMeshKey].get(); }
+	GameObject2D* GetPlayer() { return _GameObjects[0].get(); }
+	Camera2D* GetCamera() { return _Camera.get(); }
 
-	Mesh* FindResourceByName(std::string Name) { return _Resources[Name].get() ? _Resources[Name].get() : nullptr; }
+	std::vector<std::unique_ptr<GameObject2D>>::const_iterator GoBegin() const { return _GameObjects.begin(); }
+	std::vector<std::unique_ptr<GameObject2D>>::const_iterator GoEnd() const { return _GameObjects.end(); }
 
-	GameObject2D* FindObjectByName(std::string InName)
-	{
-		for (auto& Iter : _Scene)
-		{
-			if (Iter.get()->GetName().compare(InName) == 0)
-				return Iter.get();
-		}
-		return nullptr;
-	}
+	const static std::string QuadMeshKey;
+	const static std::string PlayerKey;
 
-	int GetObjectCount() const { return _Scene.size(); }
-	auto& GetSceneObjects() const { return _Scene; }
-	auto& GetResourceMap() const { return _Resources; }
 private:
 	InputManager _InputManager;
-
-	std::vector<std::unique_ptr<GameObject2D>> _Scene;
-	//메쉬만 쓰지만 일단 Resource로 선언
-	std::unordered_map<std::string, std::unique_ptr<Mesh>> _Resources;
+	std::vector<std::unique_ptr<GameObject2D>> _GameObjects;
+	std::unordered_map<std::string, std::unique_ptr<Mesh2D>> _Meshes;
+	std::unique_ptr<Camera2D> _Camera;
 };
 

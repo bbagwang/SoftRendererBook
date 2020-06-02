@@ -1,45 +1,30 @@
 #pragma once
-#include <algorithm>
-#include <string>
 
 class GameObject2D
 {
 public:
 	GameObject2D() = default;
-	GameObject2D(std::string Name) : _Name(Name), _MeshPtr(nullptr) { }
-	GameObject2D(std::string Name, const Mesh* InMeshPtr) : _Name(Name), _MeshPtr(InMeshPtr) { }
+	GameObject2D(const std::string& InName) : _Name(InName)
+	{
+		_Hash = std::hash<std::string>()(_Name);
+	}
+
+	~GameObject2D() { }
 
 public:
-	FORCEINLINE Transform2D& GetTransform() { return _Transform; }
-	FORCEINLINE const Mesh* GetMesh() { return _MeshPtr; }
-	FORCEINLINE bool HasMesh() { return (_MeshPtr != nullptr); }
-	FORCEINLINE std::string GetName() const { return _Name; }
-	FORCEINLINE virtual std::string GetClassName() const { return GameObject2D::ClassName; }
+	Transform2D& GetTransform() { return _Transform; }
+	void SetMesh(const std::string& InMeshKey);
+	const std::string& GetMeshKey() const;
+	bool HasMesh() const { return (_MeshKey.size() > 0); }
+	void SetColor(const LinearColor& InColor) { _Color = InColor; }
+	LinearColor& GetColor() { return _Color; }
+	const std::string& GetName() const { return _Name; }
+
 protected:
-	Transform2D _Transform;
-	const Mesh* _MeshPtr = nullptr;
+	std::size_t _Hash = 0;
 	std::string _Name;
-	//Statics
-	static unsigned int NameCount;
-	static std::string ClassName;
-private:
-	//같은 이름이 만들어질 가능성이 있음
-	static std::string GenerateRandomString(size_t length = 16)
-	{
-		auto randchar = []() -> char
-		{
-			const char charset[] =
-				"0123456789"
-				"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-				"abcdefghijklmnopqrstuvwxyz";
-			const size_t max_index = (sizeof(charset) - 1);
-			return charset[rand() % max_index];
-		};
-		std::string str(length, 0);
-		std::generate_n(str.begin(), length, randchar);
-		return str;
-	}
-	//문제가 있음
-	/*template<typename Object>
-	std::string GenerateClassNameBasedNumberString();*/
+	std::string _MeshKey;
+	Transform2D _Transform;
+	LinearColor _Color = LinearColor::Error;
 };
+
