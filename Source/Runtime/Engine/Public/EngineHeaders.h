@@ -5,5 +5,6 @@
 #include "Transform2D.h"
 #include "GameObject2D.h"
 #include "Camera2D.h"
+#include "QuadTree.h"
 
 #include "GameEngine.h"

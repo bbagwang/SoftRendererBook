@@ -62,17 +62,27 @@ bool GameEngine::LoadScene(const ScreenPoint& InScreenSize)
 	player->GetTransform().SetScale(Vector2::One * squareScale);
 	player->SetColor(LinearColor::Blue);
 	_GameObjects.push_back(std::move(player));
-
+	
 	// 카메라 설정
 	_Camera = std::make_unique<Camera2D>();
 	_Camera->SetCameraViewSize(InScreenSize);
 
+	//쿼드트리 설정
+	_QuadTree = std::make_unique<QuadTree>();
+
+	//쿼드 트리에 플레이어 넣음
+	GameObject2D* CurrentObject = _GameObjects.back().get();
+	Rectangle ObjectBoudary = GetMesh(CurrentObject->GetMeshKey())->GetRectangleBound();
+	ObjectBoudary.Min += CurrentObject->GetTransform().GetPosition();
+	ObjectBoudary.Max += CurrentObject->GetTransform().GetPosition();
+	_QuadTree->Insert(CurrentObject, ObjectBoudary);
+
 	// 랜덤한 배경 설정
 	std::mt19937 generator(0);
-	std::uniform_real_distribution<float> dist(-1500.f, 1500.f);
+	std::uniform_real_distribution<float> dist(-15000.f, 15000.f);
 
-	// 100개의 배경 게임 오브젝트 생성
-	for (int i = 0; i < 300; ++i)
+	// 100만개의 배경 게임 오브젝트 생성
+	for (int i = 0; i < 1000000; ++i)
 	{
 		char name[64];
 		std::snprintf(name, sizeof(name), "GameObject%d", i);
@@ -81,6 +91,11 @@ bool GameEngine::LoadScene(const ScreenPoint& InScreenSize)
 		newGo->GetTransform().SetScale(Vector2::One * squareScale);
 		newGo->SetMesh(GameEngine::QuadMeshKey);
 		_GameObjects.push_back(std::move(newGo));
+		GameObject2D* CurrentObject = _GameObjects.back().get();
+		Rectangle ObjectBoudary = GetMesh(CurrentObject->GetMeshKey())->GetRectangleBound();
+		ObjectBoudary.Min += CurrentObject->GetTransform().GetPosition();
+		ObjectBoudary.Max += CurrentObject->GetTransform().GetPosition();
+		_QuadTree->Insert(CurrentObject, ObjectBoudary);
 	}
 
 	return true;
