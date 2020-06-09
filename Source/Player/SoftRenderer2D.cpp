@@ -4,6 +4,15 @@
 #include <chrono>
 #include <cassert>
 
+//태양 자전
+float SoftRenderer::SUN_ROTATION_RATE = 1.0f * 36.f;
+//지구 자전
+float SoftRenderer::EARTH_ROTATION_RATE = 2.0f * 36.f;
+//달 공전
+float SoftRenderer::MOON_ROTATION_RATE = EARTH_ROTATION_RATE * (365 / 28.f) * 36.f;
+//화성 공전
+float SoftRenderer::MARS_ROTATION_RATE = EARTH_ROTATION_RATE * 1.5f * 36.f;
+
 // 그리드 그리기
 void SoftRenderer::DrawGrid2D()
 {
@@ -11,7 +20,7 @@ void SoftRenderer::DrawGrid2D()
 	LinearColor gridColor(LinearColor(0.8f, 0.8f, 0.8f, 0.3f));
 
 	// 뷰의 영역 계산
-	Vector2 viewPos = _GameEngine.GetCamera()->GetTransform().GetPosition();
+	Vector2 viewPos = _GameEngine.GetCamera()->GetTransform().GetLocalPosition();
 	Vector2 extent = Vector2(_ScreenSize.X * 0.5f, _ScreenSize.Y * 0.5f);
 
 	// 좌측 하단에서부터 격자 그리기
@@ -49,12 +58,17 @@ void SoftRenderer::Update2D(float InDeltaSeconds)
 	_GameEngine._bUsingQuadTreeMode = input.SpacePressed();
 	// 플레이어 게임 오브젝트의 트랜스폼
 	Transform2D& playerTransform = _GameEngine.GetPlayer()->GetTransform();
-	playerTransform.AddPosition(Vector2(input.GetXAxis(), input.GetYAxis()) * moveSpeed * InDeltaSeconds);
+	playerTransform.AddLocalPosition(Vector2(input.GetXAxis(), input.GetYAxis()) * moveSpeed * InDeltaSeconds);
 
 	// 플레이어를 따라다니는 카메라의 트랜스폼
 	static float thresholdDistance = 1.f;
 	Transform2D& cameraTransform = _GameEngine.GetCamera()->GetTransform();
-	cameraTransform.SetPosition(playerTransform.GetPosition());
+	cameraTransform.SetLocalPosition(playerTransform.GetWorldPosition());
+
+	_GameEngine.GetSun()->GetTransform().AddLocalRotation(45 * InDeltaSeconds);
+	_GameEngine.GetEarth()->GetTransform().AddLocalRotation(90 * InDeltaSeconds);
+	_GameEngine.GetMoon()->GetTransform().AddLocalRotation(100 * InDeltaSeconds);
+	//_GameEngine.GetMars()->GetTransform().AddLocalRotation(50 * InDeltaSeconds);
 }
 
 // 렌더링 로직
@@ -76,8 +90,8 @@ void SoftRenderer::Render2D()
 	const Circle& cameraCircleBound = _GameEngine.GetCamera()->GetCircleBound();
 	const Rectangle& cameraRectangleBound = _GameEngine.GetCamera()->GetRectangleBounds();
 	Rectangle QuadTreeCamBoundary;
-	QuadTreeCamBoundary.Min = cameraRectangleBound.Min + _GameEngine.GetPlayer()->GetTransform().GetPosition();
-	QuadTreeCamBoundary.Max = cameraRectangleBound.Max + _GameEngine.GetPlayer()->GetTransform().GetPosition();
+	QuadTreeCamBoundary.Min = cameraRectangleBound.Min + _GameEngine.GetPlayer()->GetTransform().GetWorldPosition();
+	QuadTreeCamBoundary.Max = cameraRectangleBound.Max + _GameEngine.GetPlayer()->GetTransform().GetWorldPosition();
 	_RSI->PushStatisticText("Total Count : " + std::to_string(totalObjectCount));
 	
 	//벤치마킹
@@ -100,7 +114,7 @@ void SoftRenderer::Render2D()
 
 			// 충돌 영역을 뷰 좌표계로 변환
 			gameObjectCircleBound.Center = finalMat * gameObjectCircleBound.Center;
-			gameObjectCircleBound.Radius = gameObjectCircleBound.Radius * transform.GetScale().Max();
+			gameObjectCircleBound.Radius = gameObjectCircleBound.Radius * transform.GetLocalScale().Max();
 
 			gameObjectRectangleBound.Min = finalMat * gameObjectRectangleBound.Min;
 			gameObjectRectangleBound.Max = finalMat * gameObjectRectangleBound.Max;
@@ -158,7 +172,7 @@ void SoftRenderer::Render2D()
 			GameObject2D* gameObject = it->get();
 			const Mesh2D* mesh = _GameEngine.GetMesh(gameObject->GetMeshKey());
 			Transform2D& transform = gameObject->GetTransform();
-			Matrix3x3 finalMat = viewMat * transform.GetModelingMatrix();
+			Matrix3x3 finalMat = viewMat * transform.GetWorldModrlingMatrix();
 
 			// 게임 오브젝트의 충돌 영역
 			Circle gameObjectCircleBound(mesh->GetCircleBound());
@@ -166,7 +180,7 @@ void SoftRenderer::Render2D()
 
 			// 충돌 영역을 뷰 좌표계로 변환
 			gameObjectCircleBound.Center = finalMat * gameObjectCircleBound.Center;
-			gameObjectCircleBound.Radius = gameObjectCircleBound.Radius * transform.GetScale().Max();
+			gameObjectCircleBound.Radius = gameObjectCircleBound.Radius * transform.GetWorldScale().Max();
 
 			gameObjectRectangleBound.Min = finalMat * gameObjectRectangleBound.Min;
 			gameObjectRectangleBound.Max = finalMat * gameObjectRectangleBound.Max;

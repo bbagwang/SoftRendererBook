@@ -32,6 +32,7 @@ public:
 	FORCEINLINE bool EqualsInTolerance(const Vector2& InVector, float InTolerance = KINDA_SMALL_NUMBER) const;
 	FORCEINLINE float Max() const;
 	FORCEINLINE float Dot(const Vector2& InVector) const;
+	FORCEINLINE Vector2 Invert() const { return Vector2(1 / X, 1 / Y); }
 
 	std::string ToString() const;
 

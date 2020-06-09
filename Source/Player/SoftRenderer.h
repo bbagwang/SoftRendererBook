@@ -79,4 +79,15 @@ private:
 
 	// 게임 엔진
 	GameEngine _GameEngine;
+
+	//태양계 데모
+	
+	//태양 자전
+	static float SUN_ROTATION_RATE;
+	//지구 자전
+	static float EARTH_ROTATION_RATE;
+	//달 공전
+	static float MOON_ROTATION_RATE;
+	//화성 공전
+	static float MARS_ROTATION_RATE;
 };
