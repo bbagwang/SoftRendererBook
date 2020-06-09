@@ -42,7 +42,7 @@ public:
 
 	Matrix3x3 GetModelingMatrix() const;
 	Matrix3x3 GetInvertedModelingMatrix() const;
-	Matrix3x3 GetWorldModrlingMatrix() const { return _WorldTRS; }
+	FORCEINLINE Matrix3x3 GetWorldModelingMatrix() const { return _WorldTRS; }
 	Matrix3x3 GetInvertedWorldModrlingMatrix() const;
 	
 	const Vector2& GetLocalX() const { return Right; }
