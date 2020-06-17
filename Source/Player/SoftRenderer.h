@@ -32,7 +32,8 @@ public:
 	std::function<void(float DeltaSeconds)> UpdateFunc;
 
 	// 게임 엔진 레퍼런스
-	GameEngine& GetGameEngine() { return _GameEngine; }
+	GameEngine2D& GetGameEngine2D() { return _GameEngine2D; }
+	GameEngine3D& GetGameEngine3D() { return _GameEngine3D; }
 
 private:
 	// 기본 루프 함수
@@ -52,6 +53,11 @@ private:
 	void DrawGrid2D();
 
 	int _Grid2DUnit = 10;
+
+	// 3D 구현함수
+	void DrawGizmo3D();
+	void Update3D(float InDeltaSeconds);
+	void Render3D();
 
 private:
 	// 초기화 점검 변수
@@ -77,17 +83,9 @@ private:
 	// 렌더러 인터페이스
 	std::unique_ptr<RenderingSoftwareInterface> _RSI;
 
-	// 게임 엔진
-	GameEngine _GameEngine;
+	// 게임 엔진 2D
+	GameEngine2D _GameEngine2D;
 
-	//태양계 데모
-	
-	//태양 자전
-	static float SUN_ROTATION_RATE;
-	//지구 자전
-	static float EARTH_ROTATION_RATE;
-	//달 공전
-	static float MOON_ROTATION_RATE;
-	//화성 공전
-	static float MARS_ROTATION_RATE;
+	// 게임 엔진 3D
+	GameEngine3D _GameEngine3D;
 };
