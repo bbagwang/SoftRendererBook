@@ -3,7 +3,9 @@
 
 Matrix4x4 Camera3D::GetViewMatrix() const
 {
-	return Matrix4x4(Vector4::UnitX, Vector4::UnitY, Vector4::UnitZ, Vector4(-_Transform._Position, true));
+	Matrix4x4 InverseRotation = Matrix4x4(Vector4(_Transform._Right, false), Vector4(_Transform._Up, false), Vector4(_Transform._Forward, false), Vector4::UnitW).Tranpose();
+	Matrix4x4 InverseTranslate = Matrix4x4(Vector4::UnitX, Vector4::UnitY, Vector4::UnitZ, Vector4(-_Transform._Position, true));
+	return InverseRotation * InverseTranslate;
 }
 
 void Camera3D::SetLookAtRotation(const Vector3& InTargetPosition)

@@ -15,7 +15,9 @@ void SoftRenderer::Update3D(float InDeltaSeconds)
 	InputManager input = _GameEngine3D.GetInputManager();
 
 	Transform3D& playerTransform = _GameEngine3D.GetPlayer()->GetTransform();
-	playerTransform.AddYawRotation(input.SpacePressed() * rotateSpeed * InDeltaSeconds);
+	playerTransform.AddYawRotation(input.GetXAxis() * rotateSpeed * InDeltaSeconds);
+	playerTransform.AddRollRotation(input.GetYAxis() * rotateSpeed * InDeltaSeconds);
+	playerTransform.AddPitchRotation(input.SpacePressed() * rotateSpeed * InDeltaSeconds);
 }
 
 // ·»´õ¸µ ·ÎÁ÷

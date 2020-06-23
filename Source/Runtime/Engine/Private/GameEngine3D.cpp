@@ -90,7 +90,8 @@ bool GameEngine3D::LoadScene(const ScreenPoint& InScreenSize)
 
 	// 카메라 설정
 	_Camera = std::make_unique<Camera3D>();
-	_Camera->GetTransform().SetPosition(Vector3(0.f, 0.f, -500.f));
+	_Camera->GetTransform().SetPosition(Vector3(500.f, 500.f, -500.f));
+	_Camera->SetLookAtRotation(GetPlayer()->GetTransform().GetPosition());
 
 	return true;
 }
