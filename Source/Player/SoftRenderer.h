@@ -55,6 +55,7 @@ private:
 	int _Grid2DUnit = 10;
 
 	// 3D 구현함수
+	// 그리드 그리기
 	void DrawGizmo3D();
 	void Update3D(float InDeltaSeconds);
 	void Render3D();

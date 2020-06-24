@@ -2,11 +2,9 @@
 #include "Precompiled.h"
 #include "SoftRenderer.h"
 
-// 그리드 그리기
 void SoftRenderer::DrawGizmo3D()
 {
 }
-
 
 // 게임 로직
 void SoftRenderer::Update3D(float InDeltaSeconds)
@@ -58,6 +56,16 @@ void SoftRenderer::Render3D()
 		for (int ti = 0; ti < triangleCount; ++ti)
 		{
 			int bi = ti * 3;
+			
+			Vector3 edge1 = (vertices[indices[bi+1]] - vertices[indices[bi]]).ToVector3();
+			Vector3 edge2 = (vertices[indices[bi+2]] - vertices[indices[bi]]).ToVector3();
+			Vector3 faceNormal = edge1.Cross(edge2).Normalize();
+			static Vector3 cameraDir = -Vector3::UnitZ;
+			if (cameraDir.Dot(faceNormal) > 0.f)
+			{
+				continue;
+			}
+
 			_RSI->DrawLine(vertices[indices[bi]].ToVector2(), vertices[indices[bi + 1]].ToVector2(), gameObject->GetColor());
 			_RSI->DrawLine(vertices[indices[bi]].ToVector2(), vertices[indices[bi + 2]].ToVector2(), gameObject->GetColor());
 			_RSI->DrawLine(vertices[indices[bi + 1]].ToVector2(), vertices[indices[bi + 2]].ToVector2(), gameObject->GetColor());
