@@ -25,12 +25,13 @@ void SoftRenderer::Render3D()
 	DrawGizmo3D();
 
 	Matrix4x4 viewMat = _GameEngine3D.GetCamera()->GetViewMatrix();
-	for (auto it = _GameEngine3D.GoBegin(); it != _GameEngine3D.GoEnd(); ++it)
+	Matrix4x4 PerspectiveMat = _GameEngine3D.GetCamera()->GetPerspectiveMatrix(_ScreenSize.X, _ScreenSize.Y);
+	for (auto it = _GameEngine3D.GoBegin(); it != _GameEngine3D.GoEnd(); ++it) 
 	{
 		GameObject3D* gameObject = it->get();
 		const Mesh3D* mesh = _GameEngine3D.GetMesh(gameObject->GetMeshKey());
 		Transform3D& transform = gameObject->GetTransform();
-		Matrix4x4 finalMat = viewMat * transform.GetModelingMatrix();
+		Matrix4x4 finalMat = PerspectiveMat * viewMat * transform.GetModelingMatrix();
 
 		size_t vertexCount = mesh->_Vertices.size();
 		size_t indexCount = mesh->_Indices.size();
@@ -50,13 +51,20 @@ void SoftRenderer::Render3D()
 		for (int vi = 0; vi < vertexCount; ++vi)
 		{
 			vertices[vi] = finalMat * vertices[vi];
+			float invW = 1.f / vertices[vi].W;
+			vertices[vi].X *= invW;
+			vertices[vi].Y *= invW;
+			vertices[vi].Z *= invW;
+
+			vertices[vi].X *= (_ScreenSize.X * 0.5f);
+			vertices[vi].Y *= (_ScreenSize.Y * 0.5f);
 		}
 
 		// 변환된 정점을 잇는 선 그리기
 		for (int ti = 0; ti < triangleCount; ++ti)
 		{
 			int bi = ti * 3;
-			
+
 			Vector3 edge1 = (vertices[indices[bi+1]] - vertices[indices[bi]]).ToVector3();
 			Vector3 edge2 = (vertices[indices[bi+2]] - vertices[indices[bi]]).ToVector3();
 			Vector3 faceNormal = edge1.Cross(edge2).Normalize();

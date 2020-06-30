@@ -8,6 +8,23 @@ Matrix4x4 Camera3D::GetViewMatrix() const
 	return InverseRotation * InverseTranslate;
 }
 
+Matrix4x4 Camera3D::GetPerspectiveMatrix(int InX, int InY) const
+{
+	float invertedAspectRatio = (float)InY / (float)InX;
+
+	float FocalLength = 1.f / tanf(Math::Deg2Rad(FOV) * 0.5f);
+	float invertedNearFar = 1.f / (NearZ - FarZ);
+	float k = (FarZ + NearZ) * invertedNearFar;
+	float l = 2.f * FarZ * NearZ * invertedNearFar;
+	return Matrix4x4
+	(
+		Vector4::UnitX * invertedAspectRatio * FocalLength,
+		Vector4::UnitY * FocalLength,
+		Vector4(0.f, 0.f, k, -1.f),
+		Vector4(0.f, 0.f, l, 0.f)
+	);
+}
+
 void Camera3D::SetLookAtRotation(const Vector3& InTargetPosition)
 {
 	_Transform._Forward = (_Transform._Position - InTargetPosition).Normalize();
